@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: nutriscan-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nutriscan}
+      POSTGRES_USER: ${POSTGRES_USER:-nutriscan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-local-password}
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      - nutriscan_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-nutriscan} -d ${POSTGRES_DB:-nutriscan}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  nutriscan_postgres_data:

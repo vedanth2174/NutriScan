@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+dist/
+build/
+.cache/
+.env
+.env.*
+!.env.example
+next-env.d.ts
+*.tsbuildinfo
+*-debug.log*
+logs/
+*.log
+media/*
+!media/.gitkeep
