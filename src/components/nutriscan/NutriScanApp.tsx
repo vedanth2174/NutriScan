@@ -2097,24 +2097,30 @@ function BarcodeFoodResult({
   backScreen,
 }: {
   go: (screen: Screen) => void;
-  food: FoodAnalysis;
+  food: Extract<FoodAnalysis, { source: "barcode" }>;
   backScreen: Screen;
 }) {
   const scoreColor =
-    food.personalizedScore >= 80
-      ? "#D4F06B"
-      : food.personalizedScore >= 65
-        ? "#3DDBB0"
-        : food.personalizedScore >= 45
-          ? "#FFB454"
-          : "#FF6B6B";
+    food.personalizedScore === null
+      ? "#888888"
+      : food.personalizedScore >= 80
+        ? "#D4F06B"
+        : food.personalizedScore >= 65
+          ? "#3DDBB0"
+          : food.personalizedScore >= 45
+            ? "#FFB454"
+            : "#FF6B6B";
+
+  const formatNutrient = (value: number | null, digits = 1) =>
+    value === null ? "N/A" : value.toFixed(digits);
+
   const nutrients = [
-    ["Energy", `${food.calories}`, "kcal"],
-    ["Protein", food.protein.toFixed(1), "g"],
-    ["Carbs", food.carbs.toFixed(1), "g"],
-    ["Fat", food.fat.toFixed(1), "g"],
-    ["Fiber", food.fiber.toFixed(1), "g"],
-    ["Sugar", food.sugar.toFixed(1), "g"],
+    ["Energy", formatNutrient(food.calories, 0), "kcal"],
+    ["Protein", formatNutrient(food.protein), "g"],
+    ["Carbs", formatNutrient(food.carbs), "g"],
+    ["Fat", formatNutrient(food.fat), "g"],
+    ["Fiber", formatNutrient(food.fiber), "g"],
+    ["Sugar", formatNutrient(food.sugar), "g"],
   ];
 
   return (
@@ -2150,24 +2156,46 @@ function BarcodeFoodResult({
             <Barcode size={13} /> {food.barcode}
           </span>
         </div>
-        <Card className="personal-score-card">
-          <div
-            className="personal-score-ring"
-            style={{
-              background: `conic-gradient(${scoreColor} ${food.personalizedScore}%, var(--subtle) 0)`,
-            }}
-          >
-            <div>
-              <strong>{food.personalizedScore}</strong>
-              <span>/100</span>
+        {food.personalizedScore !== null ? (
+          <Card className="personal-score-card">
+            <div
+              className="personal-score-ring"
+              style={{
+                background: `conic-gradient(${scoreColor} ${food.personalizedScore}%, var(--subtle) 0)`,
+              }}
+            >
+              <div>
+                <strong>{food.personalizedScore}</strong>
+                <span>/100</span>
+              </div>
             </div>
-          </div>
+            <div>
+              <span className="eyebrow">Your personalized score</span>
+              <h2 style={{ color: scoreColor }}>{food.scoreLabel}</h2>
+              <p>
+                Personalized for{" "}
+                {food.healthConditions.join(" + ") || "your health profile"}
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <Card className="personal-score-card">
+            <div>
+              <span className="eyebrow">Your personalized score</span>
+              <h2>Nutrition score unavailable</h2>
+              <p>
+                There isn't enough nutrition data to calculate a reliable score.
+              </p>
+            </div>
+          </Card>
+        )}
+        <Card className="score-explanation">
           <div>
-            <span className="eyebrow">Your NutriScore</span>
-            <h2 style={{ color: scoreColor }}>{food.scoreLabel}</h2>
+            <span className="eyebrow">Official Nutri-Score</span>
+            <h3>{food.nutriScore ?? "Not available"}</h3>
             <p>
-              Personalized for{" "}
-              {food.healthConditions.join(" + ") || "your health profile"}
+              This grade comes from the product database. It is separate from
+              your personalized nutrition score.
             </p>
           </div>
         </Card>
@@ -2225,9 +2253,7 @@ function BarcodeFoodResult({
               </div>
             </div>
             <Card className="product-ingredients">
-              {food.ingredients.map((ingredient, index) => (
-                <span key={`${ingredient}-${index}`}>{ingredient}</span>
-              ))}
+              <p>{food.ingredients.join(" ")}</p>
             </Card>
           </>
         )}

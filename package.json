@@ -15,8 +15,12 @@
     "db:migrate": "payload migrate"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@payloadcms/db-postgres": "4.0.0-beta.8",
     "@payloadcms/next": "4.0.0-beta.8",
     "@payloadcms/richtext-lexical": "4.0.0-beta.8",
+    "@payloadcms/storage-s3": "4.0.0-beta.8",
     "@payloadcms/translations": "4.0.0-beta.8",
     "@payloadcms/ui": "4.0.0-beta.8",
     "graphql": "^16.8.1",
@@ -26,11 +30,10 @@
     "payload": "4.0.0-beta.8",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "sharp": "^0.35.4",
-    "@payloadcms/db-postgres": "4.0.0-beta.8",
-    "@payloadcms/storage-s3": "4.0.0-beta.8"
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "24.12.3",
     "@types/react": "19.3.0",
