@@ -2,6 +2,9 @@
 
 import NextImage from "next/image";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
+import { redeemGoogleHandoff } from "@/lib/auth-browser";
 import { endAuthSession, startGoogleSignIn } from "@/lib/auth-browser";
 import {
   Activity,
@@ -2286,27 +2289,62 @@ function ScanHistory({
 
   useEffect(() => {
     let active = true;
+    let removeListener: (() => void) | undefined;
+    let processing = false;
 
-    nutritionService
-      .getScanHistory()
-      .then((data) => {
-        if (active) setScans(data.scans);
-      })
-      .catch((reason) => {
+    const handleAuthUrl = async (url: string) => {
+      if (processing) return;
+
+      try {
+        const callback = new URL(url);
+
+        if (
+          callback.protocol !== "com.nutriscan.app:" ||
+          callback.hostname !== "auth" ||
+          callback.pathname !== "/callback"
+        ) {
+          return;
+        }
+
+        const code = callback.searchParams.get("code");
+        if (!code) {
+          throw new Error("Google sign-in returned no authorization code.");
+        }
+
+        processing = true;
+        await Browser.close();
+        await redeemGoogleHandoff(code);
+
+        if (active) window.location.replace("/");
+      } catch (error) {
+        processing = false;
+        console.error("[Android Google sign-in]", error);
+
         if (active) {
-          setError(
-            reason instanceof Error
-              ? reason.message
-              : "Could not load your scan history.",
+          window.alert(
+            error instanceof Error ? error.message : "Google sign-in failed.",
           );
         }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      }
+    };
+
+    void CapacitorApp.addListener("appUrlOpen", ({ url }) => {
+      void handleAuthUrl(url);
+    }).then((listener) => {
+      if (active) {
+        removeListener = () => void listener.remove();
+      } else {
+        void listener.remove();
+      }
+    });
+
+    void CapacitorApp.getLaunchUrl().then((launch) => {
+      if (launch?.url) void handleAuthUrl(launch.url);
+    });
 
     return () => {
       active = false;
+      removeListener?.();
     };
   }, []);
 
@@ -2801,6 +2839,59 @@ export default function App() {
       })
       .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    let removeListener: (() => void) | undefined;
+
+    void CapacitorApp.addListener("appUrlOpen", async ({ url }) => {
+      try {
+        const callback = new URL(url);
+
+        if (
+          callback.protocol !== "com.nutriscan.app:" ||
+          callback.hostname !== "auth" ||
+          callback.pathname !== "/callback"
+        ) {
+          return;
+        }
+
+        const code = callback.searchParams.get("code");
+
+        if (!code) {
+          throw new Error("Google sign-in returned no authorization code.");
+        }
+
+        await Browser.close();
+        await redeemGoogleHandoff(code);
+
+        if (active) {
+          window.location.replace("/");
+        }
+      } catch (error) {
+        console.error("[Android Google sign-in]", error);
+        if (active) {
+          window.alert(
+            error instanceof Error ? error.message : "Google sign-in failed.",
+          );
+        }
+      }
+    }).then((listener) => {
+      if (active) {
+        removeListener = () => {
+          void listener.remove();
+        };
+      } else {
+        void listener.remove();
+      }
+    });
+
+    return () => {
+      active = false;
+      removeListener?.();
+    };
+  }, []);
+
   const go = (next: Screen) => {
     if (
       ["home", "diet-plan", "progress", "nutribites", "profile"].includes(next)
